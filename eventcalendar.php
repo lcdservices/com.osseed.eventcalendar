@@ -139,15 +139,65 @@ function eventcalendar_civicrm_preProcess($formName, &$form) {
  * Implements hook_civicrm_navigationMenu().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
- *
-function eventcalendar_civicrm_navigationMenu(&$menu) {
-_eventcalendar_civix_insert_navigation_menu($menu, NULL, array(
-'label' => ts('The Page', array('domain' => 'com.osseed.eventcalendar')),
-'name' => 'the_page',
-'url' => 'civicrm/the-page',
-'permission' => 'access CiviReport,access CiviContribute',
-'operator' => 'OR',
-'separator' => 0,
-));
-_eventcalendar_civix_navigationMenu($menu);
-} // */
+ */
+function eventcalendar_civicrm_navigationMenu(&$params) {
+  // Get the ID of the 'Administer/System Settings' menu
+  $adminMenuId = CRM_Core_DAO::getFieldValue('CRM_Core_BAO_Navigation', 'Administer', 'id', 'name');
+  $settingsMenuId = CRM_Core_DAO::getFieldValue('CRM_Core_BAO_Navigation', 'CiviEvent', 'id', 'name');
+
+  // Skip adding menu if there is no administer menu
+  if (! $adminMenuId) {
+    Civi::log()->warning('Event Calendar Extension could not find the Administer menu item. Menu item to configure this extension will not be added.');
+    return;
+  }
+
+  if (! $settingsMenuId) {
+    Civi::log()->warning('Event Calendar Extension could not find the System Settings menu item. Menu item to configure this extension will not be added.');
+    return;
+  }
+
+  // get the maximum key under administer menu
+  $maxSettingsMenuKey = max(array_keys($params[$adminMenuId]['child'][$settingsMenuId]['child']));
+  $nextSettingsMenuKey = $maxSettingsMenuKey + 1;
+
+  $params[$adminMenuId]['child'][$settingsMenuId]['child'][$nextSettingsMenuKey] =  array(
+    'attributes' => array(
+      'name' => 'Event Calendar Settings',
+      'label' => 'Event Calendar Settings',
+      'url' => 'civicrm/eventcalendarsettings?reset=1',
+      'permission' => 'administer CiviCRM',
+      'parentID' => $settingsMenuId,
+      'navID' => $nextSettingsMenuKey,
+      'active' => 1,
+    ),
+  );
+
+  _eventcalendar_civix_navigationMenu($params);
+
+  // Get the ID of the 'Events' menu
+  $eventMenuId = CRM_Core_DAO::getFieldValue('CRM_Core_BAO_Navigation', 'Events', 'id', 'name');
+
+  // Skip adding menu if there is no event menu
+  if (! $eventMenuId) {
+    Civi::log()->warning('Event Calendar Extension could not find the Event menu item. Menu item to configure this extension will not be added.');
+    return;
+  }
+
+  // get the maximum key under administer menu
+  $maxSettingsMenuKey = max(array_keys($params[$eventMenuId]['child']));
+  $nextSettingsMenuKey = $maxSettingsMenuKey + 1;
+
+  $params[$eventMenuId]['child'][$nextSettingsMenuKey] =  array(
+    'attributes' => array(
+      'name' => 'Event Calendar',
+      'label' => 'Event Calendar',
+      'url' => 'civicrm/showevents?reset=1',
+      'permission' => 'view event info',
+      'parentID' => $eventMenuId,
+      'navID' => $nextSettingsMenuKey,
+      'active' => 1,
+    ),
+  );
+
+  _eventcalendar_civix_navigationMenu($params);
+}
